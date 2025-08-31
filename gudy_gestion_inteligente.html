@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GESTION INTELIGENTE · GUDY</title>
+<style>
+:root{
+  --bg:#0f1115; --card:#161a22; --ink:#e8ecf1; --muted:#9aa4b2;
+  --brand:#5b8cff; --brand-2:#00d1b2;
+  --ok:#1db954; --warn:#ffb020; --danger:#ff4757;
+  --chip:#2a3140; --shadow:0 10px 30px rgba(0,0,0,.35);
+  --red:#ff4d4d; --orange:#ff9f1a; --green:#2ed573;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(180deg,#0b0d12,#0f1115);color:var(--ink)}
+a{color:var(--brand)}
+button{cursor:pointer;border:0;background:var(--brand);color:#fff;padding:.7rem 1rem;border-radius:.8rem;box-shadow:var(--shadow)}
+button.ghost{background:#293246;color:#e5e9f0}
+button.link{background:transparent;color:var(--brand);box-shadow:none;padding:0}
+input,select,textarea{width:100%;padding:.6rem .8rem;border-radius:.6rem;border:1px solid #2a3140;background:#121620;color:var(--ink)}
+table{width:100%;border-collapse:collapse}
+th,td{padding:.6rem .5rem;border-bottom:1px solid #232a36}
+th{color:#bfc7d1;text-align:left;font-weight:600}
+td small{color:var(--muted)}
+.badge{display:inline-block;padding:.15rem .55rem;border-radius:1rem;background:var(--chip);color:#d0d6e0;font-size:.75rem}
+.badge.red{background:#341d1d;color:#ff9999}
+.badge.orange{background:#352a1a;color:#ffc37a}
+.badge.green{background:#1e2b21;color:#9af0b7}
+kbd{background:#263043;border:1px solid #3a4564;border-bottom-width:2px;color:#dbe1ee;padding:.08rem .35rem;border-radius:.4rem}
+.layout{display:grid;grid-template-columns:260px 1fr;min-height:100%}
+aside{background:#0e121a;border-right:1px solid #232a36;padding:1rem .8rem;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:.6rem;margin-bottom:1rem}
+.brand .logo{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--brand),#7cc4ff 60%,#d4e8ff);box-shadow:0 8px 20px rgba(91,140,255,.25)}
+.brand h1{font-size:1.05rem;margin:0}
+nav .sec{display:block;padding:.6rem .7rem;border-radius:.6rem;color:#cdd6e3;text-decoration:none;margin:.2rem 0}
+nav .sec.active, nav .sec:hover{background:#1a2130}
+main{padding:1.1rem}
+.header{display:flex;gap:1rem;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.header .tz{color:#b1bdd1;font-size:.9rem}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:1rem}
+.card{background:var(--card);border:1px solid #232a36;border-radius:1rem;box-shadow:var(--shadow);padding:1rem}
+.card h3{margin:.2rem 0 .9rem 0}
+.flex{display:flex;gap:.6rem;align-items:center}
+.right{margin-left:auto}
+hr{border:0;border-top:1px solid #232a36;margin:.8rem 0}
+.hidden{display:none !important}
+footer{color:#95a2b4;font-size:.9rem;margin-top:1rem}
+@media (max-width: 960px){
+  .layout{grid-template-columns:1fr}
+  aside{position:static;height:auto}
+  .grid{grid-template-columns:1fr}
+}
+/* status chips */
+.chip{padding:.2rem .45rem;border-radius:.5rem;font-size:.75rem}
+.chip.red{background:#3b1a1a;color:#ffb3b3}
+.chip.orange{background:#3b2a1a;color:#ffd199}
+.chip.green{background:#1b3024;color:#a6f0c6}
+/* tables responsive */
+.table-wrap{overflow:auto}
+/* login */
+#loginView{max-width:440px;margin:6vh auto;background:var(--card);border:1px solid #232a36;border-radius:1rem;padding:1.2rem}
+#loginView h2{margin:.2rem 0 1rem 0}
+.small{font-size:.85rem;color:#9fb0c6}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{ -webkit-appearance:none;margin:0; }
+input[type=number]{ appearance:textfield; }
+</style>
+</head>
+<body>
+<div id="loginView" class="hidden">
+  <div class="brand">
+    <div class="logo"></div>
+    <div>
+      <h2>GESTION INTELIGENTE</h2>
+      <div class="small">Demo local · Cliente: <b>GUDY</b></div>
+    </div>
+  </div>
+  <p class="small">Iniciá sesión. (Usuarios demo: <b>admin/admin123</b>, <b>encargado/enc123</b>, <b>vendedor/ven123</b>)</p>
+  <label>Usuario</label>
+  <input id="loginUser" placeholder="usuario"/>
+  <label>Contraseña</label>
+  <input id="loginPass" type="password" placeholder="•••••••"/>
+  <div class="flex" style="margin-top:.6rem">
+    <button onclick="App.login()">Entrar</button>
+    <button class="ghost" onclick="App.seed(true)">Recrear datos demo</button>
+    <span class="right small">Zona horaria detectada: <span id="detectedTZ"></span></span>
+  </div>
+</div>
+
+<div id="app" class="layout hidden">
+  <aside>
+    <div class="brand">
+      <div class="logo"></div>
+      <div>
+        <h1>GUDY · Panel</h1>
+        <div class="small">Rol: <b id="roleLabel">—</b></div>
+      </div>
+    </div>
+    <nav>
+      <a href="#" class="sec active" data-sec="dashboard">📊 Dashboard</a>
+      <a href="#" class="sec" data-sec="clients">👥 Clientes</a>
+      <a href="#" class="sec" data-sec="plans">📒 Planes</a>
+      <a href="#" class="sec" data-sec="stock">📦 Stock</a>
+      <a href="#" class="sec" data-sec="moves">🔁 Movimientos</a>
+      <a href="#" class="sec" data-sec="reports">📈 Reportes</a>
+      <a href="#" class="sec admin-only" data-sec="users">🛂 Usuarios</a>
+      <a href="#" class="sec" data-sec="settings">⚙️ Configuración</a>
+      <hr/>
+      <a href="#" class="sec" onclick="App.exportData()">⬇️ Exportar datos</a>
+      <label class="sec" style="display:block">
+        ⬆️ Importar datos
+        <input type="file" id="importFile" accept=".json" style="display:none"/>
+      </label>
+      <hr/>
+      <a href="#" class="sec" onclick="App.logout()">🚪 Salir</a>
+    </nav>
+    <footer>© 2025 Gestión Inteligente</footer>
+  </aside>
+
+  <main>
+    <div class="header">
+      <div class="flex">
+        <div class="badge">TZ: <span id="tzLabel"></span></div>
+        <div class="badge">Ahora: <span id="nowLabel"></span></div>
+      </div>
+      <div class="flex">
+        <span class="small">Búsqueda global</span>
+        <input id="globalSearch" placeholder="Cliente, DNI, plan..." oninput="UI.globalSearch(this.value)"/>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <section id="sec-dashboard">
+      <div class="grid">
+        <div class="card" style="grid-column: span 12">
+          <h3>Estado general</h3>
+          <div class="flex">
+            <div class="badge green" id="kpiOnTime">Al día: 0</div>
+            <div class="badge orange" id="kpiSoon">Por vencer: 0</div>
+            <div class="badge red" id="kpiLate">Vencidos: 0</div>
+            <div class="right"></div>
+            <button class="ghost" onclick="UI.refreshAll()">🔄 Actualizar</button>
+            <button onclick="UI.openNotify()">🔔 Notificaciones sugeridas</button>
+          </div>
+          <div style="margin-top:1rem" class="table-wrap">
+            <table id="dashTable">
+              <thead><tr>
+                <th>Cliente</th><th>Plan</th><th>Próximo venc.</th><th>Días</th><th>Estado</th><th>Acciones</th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card" style="grid-column: span 6">
+          <h3>Stock con alerta</h3>
+          <div class="table-wrap">
+            <table id="stockAlertTable"><thead><tr><th>SKU</th><th>Producto</th><th>Total</th><th>Estado</th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+        <div class="card" style="grid-column: span 6">
+          <h3>Resumen mensual</h3>
+          <canvas id="chart" height="160"></canvas>
+          <div class="small">Ingresos estimados vs cobranzas.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CLIENTES -->
+    <section id="sec-clients" class="hidden">
+      <div class="card">
+        <div class="flex">
+          <h3>Clientes</h3>
+          <button onclick="UI.openClientForm()">+ Nuevo cliente</button>
+          <div class="right"></div>
+          <input id="clientSearch" placeholder="Buscar por nombre o DNI" oninput="UI.renderClients(this.value)"/>
+        </div>
+        <div class="table-wrap">
+          <table id="clientsTable"><thead><tr><th>Nombre</th><th>DNI</th><th>Celular</th><th>Empresa</th><th>Scoring</th><th>Acciones</th></tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- PLANES -->
+    <section id="sec-plans" class="hidden">
+      <div class="card">
+        <div class="flex">
+          <h3>Planes</h3>
+          <button onclick="UI.openPlanForm()">+ Nuevo plan</button>
+          <div class="right"></div>
+          <select id="planFilter" onchange="UI.renderPlans()">
+            <option value="all">Todos</option>
+            <option value="paid">Pagados</option>
+            <option value="dueSoon">Próximos a vencer</option>
+            <option value="late">Vencidos</option>
+            <option value="active">Activos</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table id="plansTable"><thead><tr><th>ID</th><th>Cliente</th><th>Monto</th><th>Tasa %</th><th>Cuotas</th><th>Próx. venc.</th><th>Estado</th><th>Acciones</th></tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- STOCK -->
+    <section id="sec-stock" class="hidden">
+      <div class="grid">
+        <div class="card" style="grid-column: span 7">
+          <div class="flex">
+            <h3>Stock</h3>
+            <button onclick="UI.openProductForm()">+ Producto</button>
+            <div class="right"></div>
+            <label class="flex small"><input id="toggleZero" type="checkbox" checked onchange="UI.renderStock()"/> Ocultar stock 0</label>
+            <input id="stockSearch" placeholder="Buscar producto/sku" oninput="UI.renderStock()"/>
+          </div>
+          <div class="table-wrap">
+            <table id="stockTable"><thead><tr><th>SKU</th><th>Producto</th><th>Depósito A</th><th>B</th><th>C</th><th>D</th><th>Total</th><th>Alerta</th><th>Acciones</th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+        <div class="card" style="grid-column: span 5">
+          <h3>Movimiento entre depósitos</h3>
+          <div class="grid" style="grid-template-columns:1fr 1fr;gap:.6rem">
+            <input id="mvSku" placeholder="SKU"/>
+            <input id="mvQty" type="number" step="0.01" placeholder="Cantidad"/>
+            <select id="mvFrom"><option>A</option><option>B</option><option>C</option><option>D</option></select>
+            <select id="mvTo"><option>A</option><option>B</option><option>C</option><option>D</option></select>
+          </div>
+          <div class="flex" style="margin-top:.6rem">
+            <button onclick="Actions.moveStock()">Mover</button>
+            <div class="right"></div>
+            <small>Consejo: buscá el producto y hacé clic en “Mover”.</small>
+          </div>
+          <hr/>
+          <h4>Historial reciente</h4>
+          <div class="table-wrap">
+            <table id="movesMini"><thead><tr><th>Fecha</th><th>SKU</th><th>Cant.</th><th>De</th><th>A</th><th>Usuario</th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MOVIMIENTOS -->
+    <section id="sec-moves" class="hidden">
+      <div class="card">
+        <div class="flex">
+          <h3>Movimientos de stock</h3>
+          <button class="ghost" onclick="UI.exportCSV('moves')">Exportar CSV</button>
+          <div class="right"></div>
+          <input id="movesSearch" placeholder="Filtrar por SKU/usuario" oninput="UI.renderMoves()"/>
+        </div>
+        <div class="table-wrap">
+          <table id="movesTable"><thead><tr><th>Fecha</th><th>SKU</th><th>Producto</th><th>Cant.</th><th>De</th><th>A</th><th>Usuario</th></tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- REPORTES -->
+    <section id="sec-reports" class="hidden">
+      <div class="card">
+        <div class="flex">
+          <h3>Reportes</h3>
+          <div class="right"></div>
+          <input id="repMonth" type="month" onchange="UI.renderReports()" />
+          <button onclick="window.print()">Imprimir / PDF</button>
+          <button class="ghost" onclick="UI.exportCSV('plans')">Exportar Planes CSV</button>
+          <button class="ghost" onclick="UI.exportCSV('clients')">Exportar Clientes CSV</button>
+        </div>
+        <div id="repSummary" class="grid" style="grid-template-columns:repeat(4,1fr)"></div>
+        <hr/>
+        <h4>Clientes con deuda</h4>
+        <div class="table-wrap">
+          <table id="repLate"><thead><tr><th>Cliente</th><th>Plan</th><th>Vence</th><th>Días</th><th>Monto</th></tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- USUARIOS -->
+    <section id="sec-users" class="hidden">
+      <div class="card">
+        <div class="flex">
+          <h3>Usuarios (solo admin)</h3>
+          <button onclick="UI.openUserForm()">+ Usuario</button>
+        </div>
+        <div class="table-wrap">
+          <table id="usersTable"><thead><tr><th>Usuario</th><th>Rol</th><th>Acciones</th></tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="sec-settings" class="hidden">
+      <div class="card">
+        <h3>Configuración</h3>
+        <div class="grid" style="grid-template-columns:repeat(3,1fr)">
+          <div>
+            <label>Mínimo stock (rojo)</label>
+            <input id="sMinRed" type="number" value="5" onchange="Settings.save()"/>
+          </div>
+          <div>
+            <label>Umbral advertencia (amarillo)</label>
+            <input id="sWarn" type="number" value="10" onchange="Settings.save()"/>
+          </div>
+          <div>
+            <label>Días “por vencer”</label>
+            <input id="sDueSoonDays" type="number" value="5" onchange="Settings.save()"/>
+          </div>
+        </div>
+        <div class="small" style="margin-top:.5rem">Los cambios se guardan localmente.</div>
+      </div>
+      <div class="card">
+        <h3>Integraciones de recordatorio</h3>
+        <p class="small">No enviamos mensajes automáticamente en esta demo; generamos enlaces y textos listos para WhatsApp o Email.</p>
+        <div class="grid" style="grid-template-columns:1fr 1fr">
+          <div>
+            <label>Plantilla WhatsApp</label>
+            <textarea id="tplWA" rows="6" onchange="Settings.save()">Hola {nombre}, te recordamos el vencimiento de tu plan #{planId} el {fecha}. Importe: ${monto}. Para regularizar o consultar, respondé este mensaje.</textarea>
+          </div>
+          <div>
+            <label>Plantilla Email</label>
+            <textarea id="tplMail" rows="6" onchange="Settings.save()">Asunto: Recordatorio de vencimiento plan #{planId}
+Hola {nombre}, te recordamos que el {fecha} vence tu plan. Importe: ${monto}.
+Gracias, Equipo GUDY.</textarea>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MODALES LIGEROS -->
+    <div id="modal" class="hidden card" style="position:fixed;inset:10% 10%;background:#0f141d;border:1px solid #273248;overflow:auto;z-index:99"></div>
+  </main>
+</div>
+
+<script>
+/* =====================
+   Núcleo de datos (LocalStorage)
+   ===================== */
+const LS_KEY = "gudy_app_data_v1";
+const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+const fmtDate = d => new Date(d).toLocaleDateString(undefined,{year:'numeric',month:'2-digit',day:'2-digit'});
+const fmtMoney = v => Number(v||0).toLocaleString(undefined,{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2});
+const daysBetween = (a,b)=> Math.ceil((a - b) / 86400000);
+
+const App = {
+  state: { currentUser:null, data:null },
+  init(){
+    document.getElementById('detectedTZ').textContent = TZ;
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw){ this.seed(); }
+    this.state.data = JSON.parse(localStorage.getItem(LS_KEY));
+    const u = sessionStorage.getItem("gudy_user");
+    if(u){ this.state.currentUser = JSON.parse(u); this.showApp(); } else { this.showLogin(); }
+    // navbar routing
+    document.querySelectorAll('nav .sec[data-sec]').forEach(a => a.addEventListener('click',(e)=>{
+      e.preventDefault(); UI.showSection(a.getAttribute('data-sec')); document.querySelectorAll('nav .sec').forEach(x=>x.classList.remove('active')); a.classList.add('active');
+    }));
+    // file import
+    document.getElementById('importFile').addEventListener('change', App.importData);
+    // live clock
+    setInterval(UI.tick, 1000*30); UI.tick();
+  },
+  showLogin(){
+    document.getElementById('loginView').classList.remove('hidden');
+    document.getElementById('app').classList.add('hidden');
+  },
+  showApp(){
+    document.getElementById('loginView').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    document.getElementById('roleLabel').textContent = this.state.currentUser.role;
+    // role gating
+    document.querySelectorAll('.admin-only').forEach(el => {
+      if(this.state.currentUser.role!=="administrador"){ el.classList.add('hidden'); } else { el.classList.remove('hidden'); }
+    });
+    UI.showSection('dashboard'); UI.refreshAll();
+  },
+  async login(){
+    const user = document.getElementById('loginUser').value.trim().toLowerCase();
+    const pass = document.getElementById('loginPass').value.trim();
+    const found = this.state.data.users.find(u => u.username===user && u.password===pass);
+    if(!found){ alert("Usuario o contraseña inválidos"); return; }
+    this.state.currentUser = { username:found.username, role:found.role };
+    sessionStorage.setItem("gudy_user", JSON.stringify(this.state.currentUser));
+    this.showApp();
+  },
+  logout(){ sessionStorage.removeItem("gudy_user"); location.reload(); },
+  persist(){ localStorage.setItem(LS_KEY, JSON.stringify(this.state.data)); },
+  seed(force=false){
+    if(!force && localStorage.getItem(LS_KEY)) return;
+    const now = Date.now();
+    const makeId = p => p + Math.random().toString(36).slice(2,8);
+    const clients=[
+      {id:makeId('cli_'), nombre:"María", apellido:"González", dni:"32123456", celular:"+5491122334455", empresa:"Acme SRL", score:68},
+      {id:makeId('cli_'), nombre:"Juan", apellido:"Pérez", dni:"30111222", celular:"+5491166677788", empresa:"Servicios JP", score:82},
+      {id:makeId('cli_'), nombre:"Lucía", apellido:"Ramos", dni:"28999888", celular:"+5491144455566", empresa:"LR Estudio", score:74},
+    ];
+    const plans=[
+      {id:makeId('pl_'), clientId:clients[0].id, monto:800, tasa:5, cuotas:4, inicio: now-86400000*25, proxVenc: now+86400000*5, pagadas:1, estado:"activo", historial:[]},
+      {id:makeId('pl_'), clientId:clients[1].id, monto:1200, tasa:6, cuotas:6, inicio: now-86400000*60, proxVenc: now-86400000*2, pagadas:3, estado:"atrasado", historial:[]},
+      {id:makeId('pl_'), clientId:clients[2].id, monto:500, tasa:4, cuotas:3, inicio: now-86400000*10, proxVenc: now+86400000*2, pagadas:0, estado:"activo", historial:[]},
+    ];
+    const products=[
+      {sku:"PROD-001", nombre:"Bolsa chica 30x40", alertMin:5, alertWarn:10, A:8,B:2,C:0,D:0},
+      {sku:"PROD-002", nombre:"Caja cartón 35x35", alertMin:5, alertWarn:10, A:3,B:0,C:0,D:0},
+      {sku:"PROD-003", nombre:"Etiqueta térmica 50x30", alertMin:10, alertWarn:20, A:40,B:10,C:15,D:0},
+      {sku:"PROD-004", nombre:"Film strech 10cm", alertMin:4, alertWarn:8, A:1,B:0,C:0,D:0},
+    ];
+    const moves=[
+      {ts:now-86400000*3, sku:"PROD-003", nombre:"Etiqueta térmica 50x30", qty:10, from:"A", to:"B", user:"admin"},
+      {ts:now-86400000*1, sku:"PROD-001", nombre:"Bolsa chica 30x40", qty:2, from:"A", to:"B", user:"encargado"},
+    ];
+    const users=[
+      {username:"admin", role:"administrador", password:"admin123"},
+      {username:"encargado", role:"encargado", password:"enc123"},
+      {username:"vendedor", role:"vendedor", password:"ven123"},
+    ];
+    const settings={ minRed:5, warn:10, dueSoonDays:5,
+      tplWA:"Hola {nombre}, te recordamos el vencimiento de tu plan #{planId} el {fecha}. Importe: ${monto}. Para regularizar o consultar, respondé este mensaje.",
+      tplMail:"Asunto: Recordatorio de vencimiento plan #{planId}\nHola {nombre}, te recordamos que el {fecha} vence tu plan. Importe: ${monto}.\nGracias, Equipo GUDY." };
+    const audit=[];
+    const data={clients,plans,products,moves,users,settings,audit};
+    localStorage.setItem(LS_KEY, JSON.stringify(data));
+  },
+  exportData(){
+    const blob = new Blob([localStorage.getItem(LS_KEY)], {type:'application/json'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'gudy_data_'+ new Date().toISOString().slice(0,10) + '.json'; a.click(); URL.revokeObjectURL(a.href);
+  },
+  importData(evt){
+    const f = evt.target.files[0]; if(!f) return;
+    const reader = new FileReader();
+    reader.onload = (e)=>{ localStorage.setItem(LS_KEY, e.target.result); alert("Datos importados"); location.reload(); };
+    reader.readAsText(f);
+  }
+};
+
+/* =====================
+   UI y acciones
+   ===================== */
+const UI = {
+  showSection(name){
+    document.querySelectorAll('main section').forEach(s=>s.classList.add('hidden'));
+    document.getElementById('sec-'+name).classList.remove('hidden');
+    if(name==='dashboard') this.renderDashboard();
+    if(name==='clients') this.renderClients();
+    if(name==='plans') this.renderPlans();
+    if(name==='stock') { this.renderStock(); this.renderMovesMini(); }
+    if(name==='moves') this.renderMoves();
+    if(name==='reports') this.renderReports();
+    if(name==='users') this.renderUsers();
+    if(name==='settings') this.renderSettings();
+  },
+  refreshAll(){
+    this.renderDashboard(); this.renderStock(); this.renderMovesMini(); this.renderReports();
+    this.renderClients(); this.renderPlans(); this.renderUsers();
+  },
+  tick(){
+    document.getElementById('tzLabel').textContent = TZ;
+    document.getElementById('nowLabel').textContent = new Date().toLocaleString();
+    UI.renderDashboard(true); // update countdowns
+  },
+  globalSearch(q){
+    q = (q||"").toLowerCase().trim();
+    if(!q){ this.renderDashboard(); return; }
+    const d = App.state.data;
+    const byClient = d.clients.filter(c => (c.nombre+" "+c.apellido+" "+c.dni).toLowerCase().includes(q)).map(c=>c.id);
+    const tbody = document.querySelector('#dashTable tbody'); tbody.innerHTML="";
+    d.plans.forEach(p=>{
+      if(byClient.includes(p.clientId) || (p.id||"").toLowerCase().includes(q)){
+        const c = d.clients.find(x=>x.id===p.clientId); tbody.appendChild(this._trDash(p,c));
+      }
+    });
+  },
+  // ------- Dashboard -------
+  _statusForPlan(p){
+    const days = daysBetween(new Date(p.proxVenc), new Date());
+    const soon = App.state.data.settings.dueSoonDays || 5;
+    if(days < 0) return {label:"Vencido", chip:"red", days};
+    if(days <= soon) return {label:"Por vencer", chip:"orange", days};
+    return {label:"Al día", chip:"green", days};
+  },
+  _trDash(p,c){
+    const st = this._statusForPlan(p);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${c.nombre} ${c.apellido}<br/><small>${c.dni}</small></td>
+      <td>#${p.id}<br/><small>${p.cuotas} cuotas ${p.tasa}%</small></td>
+      <td>${fmtDate(p.proxVenc)}</td>
+      <td>${st.days}</td>
+      <td><span class="chip ${st.chip}">${st.label}</span></td>
+      <td><button class="ghost" onclick="UI.openPlan(${JSON.stringify(p).replace(/"/g,'&quot;')})">Ver</button></td>`;
+    return tr;
+  },
+  renderDashboard(onlyCounters=false){
+    const d = App.state.data;
+    let on=0, soon=0, late=0;
+    d.plans.forEach(p=>{ const s=this._statusForPlan(p); if(s.chip==='green') on++; else if(s.chip==='orange') soon++; else late++; });
+    document.getElementById('kpiOnTime').textContent = `Al día: ${on}`;
+    document.getElementById('kpiSoon').textContent = `Por vencer: ${soon}`;
+    document.getElementById('kpiLate').textContent = `Vencidos: ${late}`;
+
+    if(onlyCounters) return;
+    const tbody = document.querySelector('#dashTable tbody'); tbody.innerHTML="";
+    d.plans
+      .slice().sort((a,b)=>a.proxVenc-b.proxVenc)
+      .forEach(p=>{ const c = d.clients.find(x=>x.id===p.clientId); tbody.appendChild(this._trDash(p,c)); });
+    // stock alert
+    const stbody = document.querySelector('#stockAlertTable tbody'); stbody.innerHTML="";
+    d.products.forEach(prod=>{
+      const total = prod.A+prod.B+prod.C+prod.D;
+      const alert = total<=prod.alertMin ? 'red' : (total<=prod.alertWarn ? 'orange':'green');
+      if(alert!=='green'){
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${prod.sku}</td><td>${prod.nombre}</td><td>${total}</td>
+        <td><span class="badge ${alert}">${alert==='red'?'Bajo':'Advertencia'}</span></td>`;
+        stbody.appendChild(tr);
+      }
+    });
+    Charts.drawMonthly();
+  },
+  openNotify(){
+    const d = App.state.data;
+    const soonDays = d.settings.dueSoonDays||5;
+    const items = d.plans.map(p=>{
+      const c = d.clients.find(x=>x.id===p.clientId);
+      const st = this._statusForPlan(p);
+      if(st.chip!=='green'){
+        const msg = Settings.tpl('WA', {nombre:c.nombre, planId:p.id, fecha:fmtDate(p.proxVenc), monto:(p.monto).toFixed(2)});
+        const wa = `https://wa.me/${(c.celular||'').replace(/[^0-9]/g,'')}?text=${encodeURIComponent(msg)}`;
+        const mailBody = Settings.tpl('Mail', {nombre:c.nombre, planId:p.id, fecha:fmtDate(p.proxVenc), monto:(p.monto).toFixed(2)});
+        const mail = `mailto:?subject=${encodeURIComponent('Recordatorio plan #'+p.id)}&body=${encodeURIComponent(mailBody)}`;
+        return {plan:p, cliente:c, estado:st.label, wa, mail, msg};
+      }
+      return null;
+    }).filter(Boolean);
+    const html = [`<h3>Notificaciones sugeridas</h3><p class="small">Generadas según vencimientos. (No se envían solas en esta demo)</p>`];
+    html.push('<div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Plan</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>');
+    items.forEach(it=>{
+      html.push(`<tr><td>${it.cliente.nombre} ${it.cliente.apellido}<br/><small>${it.cliente.celular}</small></td>
+        <td>#${it.plan.id}<br/><small>Vence: ${fmtDate(it.plan.proxVenc)}</small></td>
+        <td><span class="chip ${it.estado==='Vencido'?'red':'orange'}">${it.estado}</span></td>
+        <td class="flex"><a href="${it.wa}" target="_blank">WhatsApp</a> · <a href="${it.mail}">Email</a> · <button class="ghost" onclick="UI.copy('${it.msg.replace(/'/g,'\\&#39;')}')">Copiar texto</button></td></tr>`);
+    });
+    html.push('</tbody></table></div><div class="flex" style="margin-top:.6rem"><div class="right"></div><button onclick="UI.closeModal()">Cerrar</button></div>');
+    UI.modal(html.join(""));
+  },
+  copy(txt){ navigator.clipboard.writeText(txt).then(()=>alert("Copiado al portapapeles")) },
+  // ------- Clientes -------
+  renderClients(q=""){
+    const d = App.state.data; q=q.toLowerCase();
+    const tbody = document.querySelector('#clientsTable tbody'); tbody.innerHTML="";
+    d.clients
+      .filter(c=> (c.nombre+" "+c.apellido+" "+c.dni).toLowerCase().includes(q))
+      .forEach(c=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${c.nombre} ${c.apellido}</td><td>${c.dni}</td><td>${c.celular||'-'}</td><td>${c.empresa||'-'}</td><td>${Scoring.calcForClient(c.id)} / 100</td>
+          <td><button class="ghost" onclick="UI.openClient('${c.id}')">Ver</button></td>`;
+        tbody.appendChild(tr);
+      });
+  },
+  openClient(id){
+    const d = App.state.data; const c = d.clients.find(x=>x.id===id);
+    const plans = d.plans.filter(p=>p.clientId===id);
+    let html = `<h3>Cliente: ${c.nombre} ${c.apellido}</h3>
+    <p class="small">DNI: ${c.dni} · Cel: ${c.celular||'-'} · Empresa: ${c.empresa||'-'}</p>
+    <div class="badge">Scoring: ${Scoring.calcForClient(id)} / 100</div>
+    <hr/><h4>Planes</h4>
+    <div class="table-wrap"><table><thead><tr><th>ID</th><th>Monto</th><th>Cuotas</th><th>Próx. venc.</th><th>Estado</th></tr></thead><tbody>`;
+    plans.forEach(p=>{
+      const st = this._statusForPlan(p);
+      html += `<tr><td>#${p.id}</td><td>${fmtMoney(p.monto)}</td><td>${p.cuotas}</td><td>${fmtDate(p.proxVenc)}</td><td><span class="chip ${st.chip}">${st.label}</span></td></tr>`
+    });
+    html += `</tbody></table></div>
+    <div class="flex" style="margin-top:.6rem"><button onclick="UI.closeModal()">Cerrar</button><div class="right"></div><button class="ghost" onclick="UI.openClientForm('${id}')">Editar</button></div>`;
+    UI.modal(html);
+  },
+  openClientForm(id=null){
+    const d = App.state.data;
+    const c = id? d.clients.find(x=>x.id===id) : {nombre:"",apellido:"",dni:"",celular:"",empresa:""};
+    const html = `<h3>${id?'Editar':'Nuevo'} cliente</h3>
+      <div class="grid" style="grid-template-columns:repeat(2,1fr);gap:.6rem">
+        <input id="fNombre" placeholder="Nombre" value="${c.nombre||''}"/>
+        <input id="fApellido" placeholder="Apellido" value="${c.apellido||''}"/>
+        <input id="fDni" placeholder="DNI" value="${c.dni||''}"/>
+        <input id="fCel" placeholder="Celular" value="${c.celular||''}"/>
+        <input id="fEmp" placeholder="Empresa" value="${c.empresa||''}"/>
+      </div>
+      <div class="flex" style="margin-top:.8rem">
+        <button onclick="Actions.saveClient('${id||''}')">Guardar</button>
+        <div class="right"></div>
+        ${id?'<button class="ghost" onclick="Actions.deleteClient(\''+id+'\')">Eliminar</button>':''}
+        <button class="ghost" onclick="UI.closeModal()">Cancelar</button>
+      </div>`;
+    UI.modal(html);
+  },
+  // ------- Planes -------
+  renderPlans(){
+    const d = App.state.data;
+    const filter = document.getElementById('planFilter').value;
+    const tbody = document.querySelector('#plansTable tbody'); tbody.innerHTML="";
+    d.plans.forEach(p=>{
+      const st = this._statusForPlan(p);
+      let ok=true;
+      if(filter==='paid') ok = p.estado==='pagado';
+      if(filter==='dueSoon') ok = st.chip==='orange';
+      if(filter==='late') ok = st.chip==='red';
+      if(filter==='active') ok = p.estado==='activo' || p.estado==='atrasado';
+      if(!ok) return;
+      const c = d.clients.find(x=>x.id===p.clientId);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>#${p.id}</td><td>${c? (c.nombre+' '+c.apellido) : '-'}</td>
+        <td>${fmtMoney(p.monto)}</td><td>${p.tasa}</td><td>${p.cuotas} (${p.pagadas} pag.)</td>
+        <td>${fmtDate(p.proxVenc)}</td><td><span class="chip ${st.chip}">${st.label}</span></td>
+        <td>
+          <button class="ghost" onclick="UI.openPlan(${JSON.stringify(p).replace(/"/g,'&quot;')})">Ver</button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  },
+  openPlan(p){
+    const d = App.state.data;
+    const c = d.clients.find(x=>x.id===p.clientId);
+    const st = this._statusForPlan(p);
+    const canDelete = ['administrador','encargado'].includes(App.state.currentUser.role);
+    const html = `<h3>Plan #${p.id}</h3>
+      <p class="small">Cliente: ${c? c.nombre+' '+c.apellido : '-'} · Monto: ${fmtMoney(p.monto)} · Tasa: ${p.tasa}% · Cuotas: ${p.cuotas}</p>
+      <div class="badge ${st.chip}">${st.label} · Próximo venc.: ${fmtDate(p.proxVenc)} · Días: ${st.days}</div>
+      <hr/>
+      <div class="flex">
+        <button onclick="UI.openPayment('${p.id}')">Registrar pago</button>
+        <button class="ghost" onclick="UI.openPlanForm('${p.id}')">Editar</button>
+        ${canDelete?'<button class="ghost" onclick="Actions.deletePlan(\''+p.id+'\')">Eliminar</button>':''}
+        <div class="right"></div>
+        <button class="ghost" onclick="UI.closeModal()">Cerrar</button>
+      </div>`;
+    UI.modal(html);
+  },
+  openPayment(planId){
+    const d = App.state.data; const p = d.plans.find(x=>x.id===planId);
+    const html = `<h3>Pago de cuota · Plan #${p.id}</h3>
+      <div class="grid" style="grid-template-columns:repeat(3,1fr);gap:.6rem">
+        <input id="payMonto" type="number" step="0.01" placeholder="Monto de cuota (sugerido)" value="${(p.monto*(1+p.tasa/100)/p.cuotas).toFixed(2)}"/>
+        <input id="payFecha" type="date" value="${new Date().toISOString().slice(0,10)}"/>
+        <select id="payMedio"><option>Efectivo</option><option>Debito</option><option>Credito</option><option>Transferencia</option></select>
+      </div>
+      <div class="flex" style="margin-top:.6rem">
+        <button onclick="Actions.pay('${p.id}')">Confirmar pago</button>
+        <div class="right"></div>
+        <button class="ghost" onclick="UI.closeModal()">Cancelar</button>
+      </div>`;
+    UI.modal(html);
+  },
+  openPlanForm(id=null){
+    const d = App.state.data;
+    const p = id? d.plans.find(x=>x.id===id) : {clientId:"",monto:"",tasa:5,cuotas:3,inicio:new Date().toISOString().slice(0,10),proxVenc:new Date(Date.now()+86400000*30).toISOString().slice(0,10)};
+    const options = d.clients.map(c=>`<option value="${c.id}" ${p.clientId===c.id?'selected':''}>${c.nombre} ${c.apellido} (${c.dni})</option>`).join('');
+    const html = `<h3>${id?'Editar':'Nuevo'} plan</h3>
+      <div class="grid" style="grid-template-columns:repeat(2,1fr);gap:.6rem">
+        <label>Cliente<select id="plClient"><option value="">— Elegir —</option>${options}</select></label>
+        <label>Monto<input id="plMonto" type="number" step="0.01" value="${p.monto||''}"/></label>
+        <label>Tasa %<input id="plTasa" type="number" step="0.01" value="${p.tasa||5}"/></label>
+        <label>Cuotas<input id="plCuotas" type="number" value="${p.cuotas||3}"/></label>
+        <label>Inicio<input id="plInicio" type="date" value="${(p.inicio? new Date(p.inicio):new Date()).toISOString().slice(0,10)}"/></label>
+        <label>Próx. vencimiento<input id="plVenc" type="date" value="${(p.proxVenc? new Date(p.proxVenc):new Date(Date.now()+86400000*30)).toISOString().slice(0,10)}"/></label>
+      </div>
+      <p class="small">Validamos campos antes de confirmar (usabilidad mejorada).</p>
+      <div class="flex">
+        <button onclick="Actions.savePlan('${id||''}')">Guardar</button>
+        <div class="right"></div>
+        <button class="ghost" onclick="UI.closeModal()">Cancelar</button>
+      </div>`;
+    UI.modal(html);
+  },
+  // ------- Stock -------
+  renderStock(){
+    const d = App.state.data;
+    const hideZero = document.getElementById('toggleZero').checked;
+    const q = (document.getElementById('stockSearch').value||"").toLowerCase();
+    const tbody = document.querySelector('#stockTable tbody'); tbody.innerHTML="";
+    d.products
+      .filter(p => q? (p.sku.toLowerCase().includes(q)||p.nombre.toLowerCase().includes(q)) : true)
+      .forEach(p=>{
+        const total = p.A+p.B+p.C+p.D;
+        if(hideZero && total<=0) return;
+        const alert = total<=p.alertMin ? 'red' : (total<=p.alertWarn ? 'orange':'green');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${p.sku}</td><td>${p.nombre}</td>
+          <td>${p.A}</td><td>${p.B}</td><td>${p.C}</td><td>${p.D}</td><td>${total}</td>
+          <td><span class="badge ${alert}">${alert==='green'?'OK':(alert==='orange'?'Advertencia':'Bajo')}</span></td>
+          <td><button class="ghost" onclick="UI.prefillMove('${p.sku}')">Mover</button></td>`;
+        tbody.appendChild(tr);
+      });
+  },
+  prefillMove(sku){ document.getElementById('mvSku').value=sku; },
+  renderMovesMini(){
+    const tb = document.querySelector('#movesMini tbody'); tb.innerHTML="";
+    App.state.data.moves.slice(-10).reverse().forEach(m=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${new Date(m.ts).toLocaleString()}</td><td>${m.sku}</td><td>${m.qty}</td><td>${m.from}</td><td>${m.to}</td><td>${m.user}</td>`;
+      tb.appendChild(tr);
+    });
+  },
+  renderMoves(){
+    const q = (document.getElementById('movesSearch').value||"").toLowerCase();
+    const tb = document.querySelector('#movesTable tbody'); tb.innerHTML="";
+    App.state.data.moves.slice().reverse()
+      .filter(m => (m.sku+m.user+(m.nombre||'')).toLowerCase().includes(q))
+      .forEach(m=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${new Date(m.ts).toLocaleString()}</td><td>${m.sku}</td><td>${m.nombre||'-'}</td><td>${m.qty}</td><td>${m.from}</td><td>${m.to}</td><td>${m.user}</td>`;
+        tb.appendChild(tr);
+      });
+  },
+  // ------- Usuarios -------
+  renderUsers(){
+    const can = App.state.currentUser.role==='administrador';
+    const tb = document.querySelector('#usersTable tbody'); tb.innerHTML="";
+    App.state.data.users.forEach(u=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${u.username}</td><td>${u.role}</td>
+      <td>${can? `<button class="ghost" onclick="UI.editUser('${u.username}')">Editar</button>`:''}</td>`;
+      tb.appendChild(tr);
+    });
+  },
+  openUserForm(){
+    const html = `<h3>Nuevo usuario</h3>
+      <div class="grid" style="grid-template-columns:repeat(2,1fr);gap:.6rem">
+        <input id="uUser" placeholder="usuario"/>
+        <select id="uRole"><option>vendedor</option><option>encargado</option><option>administrador</option></select>
+        <input id="uPass" placeholder="contraseña"/>
+      </div>
+      <div class="flex" style="margin-top:.6rem">
+        <button onclick="Actions.addUser()">Crear</button>
+        <div class="right"></div><button class="ghost" onclick="UI.closeModal()">Cancelar</button>
+      </div>`;
+    UI.modal(html);
+  },
+  editUser(username){
+    const u = App.state.data.users.find(x=>x.username===username);
+    const html = `<h3>Editar usuario</h3>
+      <div class="grid" style="grid-template-columns:repeat(2,1fr);gap:.6rem">
+        <input id="uUser" disabled value="${u.username}"/>
+        <select id="uRole"><option ${u.role==='vendedor'?'selected':''}>vendedor</option><option ${u.role==='encargado'?'selected':''}>encargado</option><option ${u.role==='administrador'?'selected':''}>administrador</option></select>
+        <input id="uPass" placeholder="nueva contraseña (opcional)"/>
+      </div>
+      <div class="flex" style="margin-top:.6rem">
+        <button onclick="Actions.updateUser()">Guardar</button>
+        <div class="right"></div><button class="ghost" onclick="UI.closeModal()">Cerrar</button>
+      </div>`;
+    UI.modal(html);
+  },
+  // ------- Reports -------
+  renderReports(){
+    const d = App.state.data;
+    const monthStr = document.getElementById('repMonth').value || new Date().toISOString().slice(0,7);
+    document.getElementById('repMonth').value = monthStr;
+    const [yy,mm] = monthStr.split('-').map(Number);
+    const start = new Date(yy,mm-1,1).getTime(); const end = new Date(yy,mm,0,23,59,59).getTime();
+    const plansInMonth = d.plans.filter(p => p.proxVenc>=start && p.proxVenc<=end);
+    const totalMonto = plansInMonth.reduce((s,p)=>s+p.monto,0);
+    const vencidos = plansInMonth.filter(p=> UI._statusForPlan(p).chip==='red');
+    const porVencer = plansInMonth.filter(p=> UI._statusForPlan(p).chip==='orange');
+    const alDia = plansInMonth.filter(p=> UI._statusForPlan(p).chip==='green');
+    const summary = [
+      {label:"Planes del mes", val: plansInMonth.length},
+      {label:"Monto total", val: fmtMoney(totalMonto)},
+      {label:"Al día", val: alDia.length},
+      {label:"Vencidos", val: vencidos.length},
+    ];
+    const wrap = document.getElementById('repSummary'); wrap.innerHTML="";
+    summary.forEach(k=>{
+      const div = document.createElement('div'); div.className="card"; div.innerHTML = `<h4>${k.label}</h4><div style="font-size:1.6rem">${k.val}</div>`; wrap.appendChild(div);
+    });
+    const tb = document.querySelector('#repLate tbody'); tb.innerHTML="";
+    vencidos.forEach(p=>{
+      const c = d.clients.find(x=>x.id===p.clientId);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${c? c.nombre+' '+c.apellido : '-'}</td><td>#${p.id}</td><td>${fmtDate(p.proxVenc)}</td><td>${daysBetween(new Date(p.proxVenc), new Date())}</td><td>${fmtMoney(p.monto/p.cuotas)}</td>`;
+      tb.appendChild(tr);
+    });
+  },
+  exportCSV(kind){
+    const d = App.state.data;
+    let rows = [];
+    if(kind==='moves'){
+      rows = [["fecha","sku","producto","cantidad","de","a","usuario"]].concat(
+        d.moves.map(m=>[new Date(m.ts).toISOString(), m.sku, m.nombre||'', m.qty, m.from, m.to, m.user])
+      );
+    }else if(kind==='plans'){
+      rows = [["id","cliente","monto","tasa","cuotas","prox_venc","estado"]].concat(
+        d.plans.map(p=>{ const c=d.clients.find(x=>x.id===p.clientId); return [p.id, c?c.nombre+' '+c.apellido:'', p.monto, p.tasa, p.cuotas, new Date(p.proxVenc).toISOString().slice(0,10), p.estado]; })
+      );
+    }else if(kind==='clients'){
+      rows = [["id","nombre","apellido","dni","celular","empresa","score"]].concat(
+        d.clients.map(c=>[c.id,c.nombre,c.apellido,c.dni,c.celular||'',c.empresa||'', Scoring.calcForClient(c.id)])
+      );
+    }
+    const csv = rows.map(r=>r.map(x=>`"${(x??'').toString().replace(/"/g,'""')}"`).join(",")).join("\r\n");
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download = 'gudy_'+kind+'.csv'; a.click(); URL.revokeObjectURL(a.href);
+  },
+  // ------- Settings -------
+  renderSettings(){
+    const s = App.state.data.settings; 
+    document.getElementById('sMinRed').value = s.minRed??5;
+    document.getElementById('sWarn').value = s.warn??10;
+    document.getElementById('sDueSoonDays').value = s.dueSoonDays??5;
+    document.getElementById('tplWA').value = s.tplWA||"";
+    document.getElementById('tplMail').value = s.tplMail||"";
+  },
+  // ------- Modal -------
+  modal(html){
+    const m = document.getElementById('modal'); m.innerHTML = html; m.classList.remove('hidden');
+  },
+  closeModal(){ document.getElementById('modal').classList.add('hidden'); },
+};
+
+const Settings = {
+  save(){
+    const s = App.state.data.settings;
+    s.minRed = Number(document.getElementById('sMinRed').value||5);
+    s.warn = Number(document.getElementById('sWarn').value||10);
+    s.dueSoonDays = Number(document.getElementById('sDueSoonDays').value||5);
+    s.tplWA = document.getElementById('tplWA').value;
+    s.tplMail = document.getElementById('tplMail').value;
+    App.persist(); alert("Guardado");
+  },
+  tpl(kind, vars){
+    const s = App.state.data.settings;
+    const txt = (kind==='WA'?s.tplWA:s.tplMail)||"";
+    return txt
+      .replaceAll("{nombre}", vars.nombre||"")
+      .replaceAll("{planId}", vars.planId||"")
+      .replaceAll("{fecha}", vars.fecha||"")
+      .replaceAll("{monto}", vars.monto||"");
+  }
+};
+
+/* =====================
+   Acciones CRUD
+   ===================== */
+const Actions = {
+  _id(p){ return p + Math.random().toString(36).slice(2,8); },
+  saveClient(id){
+    const d = App.state.data;
+    const c = { nombre:document.getElementById('fNombre').value.trim(),
+                apellido:document.getElementById('fApellido').value.trim(),
+                dni:document.getElementById('fDni').value.trim(),
+                celular:document.getElementById('fCel').value.trim(),
+                empresa:document.getElementById('fEmp').value.trim() };
+    if(!c.nombre||!c.apellido||!c.dni){ alert("Nombre, Apellido y DNI son obligatorios"); return; }
+    if(id){
+      const idx = d.clients.findIndex(x=>x.id===id); d.clients[idx] = {...d.clients[idx], ...c};
+      d.audit.push({ts:Date.now(), who:App.state.currentUser.username, action:"edit_client", id});
+    }else{
+      c.id=this._id('cli_'); d.clients.push(c);
+      d.audit.push({ts:Date.now(), who:App.state.currentUser.username, action:"create_client", id:c.id});
+    }
+    App.persist(); UI.closeModal(); UI.renderClients();
+  },
+  deleteClient(id){
+    if(!confirm("¿Eliminar cliente?")) return;
+    const d = App.state.data;
+    const used = d.plans.some(p=>p.clientId===id);
+    if(used){ alert("No se puede eliminar: el cliente tiene planes asociados."); return; }
+    d.clients = d.clients.filter(x=>x.id!==id);
+    d.audit.push({ts:Date.now(), who:App.state.currentUser.username, action:"delete_client", id});
+    App.persist(); UI.closeModal(); UI.renderClients();
+  },
+  savePlan(id){
+    const d = App.state.data;
+    const plClient = document.getElementById('plClient').value;
+    const monto = Number(document.getElementById('plMonto').value);
+    const tasa = Number(document.getElementById('plTasa').value);
+    const cuotas = Number(document.getElementById('plCuotas').value);
+    const inicio = new Date(document.getElementById('plInicio').value).getTime();
+    const proxVenc = new Date(document.getElementById('plVenc').value).getTime();
+    if(!plClient || !monto || !cuotas || !proxVenc){ alert("Faltan datos del plan"); return; }
+    const newPlan = { id: id||this._id('pl_'), clientId:plClient, monto, tasa, cuotas, inicio, proxVenc, pagadas:0, estado:"activo", historial:[] };
+    if(id){
+      const idx = d.plans.findIndex(x=>x.id===id); d.plans[idx] = {...d.plans[idx], ...newPlan};
+      d.audit.push({ts:Date.now(), who:App.state.currentUser.username, action:"edit_plan", id});
+    }else{
+      d.plans.push(newPlan);
+      d.audit.push({ts:Date.now(), who:App.state.currentUser.username, action:"create_plan", id:newPlan.id});
+    }
+    App.persist(); UI.closeModal(); UI.renderPlans(); UI.renderDashboard();
+  },
+  deletePlan(id){
+    if(!['administrador','encargado'].includes(App.state.currentUser.role)){ alert("No tenés permisos para eliminar"); return; }
+    if(!confirm("¿Eliminar plan? Esta acción quedará auditada.")) return;
+    const d = App.state.data; d.plans = d.plans.filter(p=>p.id!==id);
+    d.audit.push({ts:Date.now(), who:App.state.currentUser.username, action:"delete_plan", id});
+    App.persist(); UI.closeModal(); UI.renderPlans(); UI.renderDashboard();
+  },
+  pay(id){
+    const d = App.state.data; const p = d.plans.find(x=>x.id===id);
+    const monto = Number(document.getElementById('payMonto').value||0);
+    const fecha = new Date(document.getElementById('payFecha').value).getTime();
+    const medio = document.getElementById('payMedio').value;
+    if(!monto || !fecha){ alert("Completá monto y fecha"); return; }
+    p.pagadas = Math.min(p.cuotas, (p.pagadas||0)+1);
+    p.historial.push({ts:fecha, medio, monto});
+    // mueve próximo vencimiento +30 días (simple)
+    p.proxVenc = new Date(p.proxVenc + 86400000*30).getTime();
+    if(p.pagadas>=p.cuotas){ p.estado="pagado"; }
+    d.audit.push({ts:Date.now(), who:App.state.currentUser.username, action:"pay_installment", id, monto});
+    App.persist(); UI.closeModal(); UI.renderPlans(); UI.renderDashboard(); UI.renderReports();
+  },
+  // stock
+  addProduct(obj){
+    App.state.data.products.push(obj); App.persist(); UI.closeModal(); UI.renderStock();
+  },
+  moveStock(){
+    const sku = document.getElementById('mvSku').value.trim();
+    const qty = Number(document.getElementById('mvQty').value);
+    const from = document.getElementById('mvFrom').value; const to = document.getElementById('mvTo').value;
+    if(!sku || !qty || from===to){ alert("Completá SKU, cantidad y depósitos distintos"); return; }
+    const p = App.state.data.products.find(x=>x.sku===sku); if(!p){ alert("SKU inexistente"); return; }
+    if(p[from] < qty){ alert("No hay stock suficiente en depósito "+from); return; }
+    p[from]-=qty; p[to]+=qty;
+    App.state.data.moves.push({ts:Date.now(), sku:p.sku, nombre:p.nombre, qty, from, to, user:App.state.currentUser.username});
+    App.persist(); UI.renderStock(); UI.renderMovesMini(); UI.renderMoves();
+  },
+  addUser(){
+    const u = document.getElementById('uUser').value.trim().toLowerCase();
+    const r = document.getElementById('uRole').value;
+    const p = document.getElementById('uPass').value.trim();
+    if(!u||!p){ alert("Usuario y contraseña requeridos"); return; }
+    if(App.state.data.users.find(x=>x.username===u)){ alert("Ya existe ese usuario"); return; }
+    App.state.data.users.push({username:u, role:r, password:p});
+    App.persist(); UI.closeModal(); UI.renderUsers();
+  },
+  updateUser(){
+    const u = document.getElementById('uUser').value.trim().toLowerCase();
+    const r = document.getElementById('uRole').value;
+    const p = document.getElementById('uPass').value.trim();
+    const idx = App.state.data.users.findIndex(x=>x.username===u);
+    if(idx<0) { alert("No encontrado"); return; }
+    App.state.data.users[idx].role = r;
+    if(p) App.state.data.users[idx].password = p;
+    App.persist(); UI.closeModal(); UI.renderUsers();
+  }
+};
+
+const Scoring = {
+  // scoring simple: 60% pagos al día, 25% monto promedio, 15% cantidad de planes (normalizados)
+  calcForClient(clientId){
+    const d = App.state.data;
+    const plans = d.plans.filter(p=>p.clientId===clientId);
+    if(plans.length===0) return 50;
+    const onTime = plans.filter(p=> UI._statusForPlan(p).chip!=='red').length / plans.length; // no cuenta vencidos
+    const avgMonto = plans.reduce((s,p)=>s+p.monto,0)/plans.length;
+    const maxMonto = Math.max(...d.plans.map(p=>p.monto), 1);
+    const normMonto = avgMonto / maxMonto;
+    const maxPlans = Math.max(...d.clients.map(c=> d.plans.filter(p=>p.clientId===c.id).length));
+    const normCount = (plans.length) / (maxPlans||1);
+    const score = (onTime*0.6 + normMonto*0.25 + normCount*0.15) * 100;
+    return Math.round(score);
+  }
+};
+
+/* =====================
+   Formularios auxiliares
+   ===================== */
+UI.openProductForm = function(){
+  const html = `<h3>Nuevo producto</h3>
+    <div class="grid" style="grid-template-columns:repeat(2,1fr);gap:.6rem">
+      <input id="pSku" placeholder="SKU"/>
+      <input id="pNombre" placeholder="Nombre"/>
+      <input id="pMin" type="number" placeholder="Mínimo (rojo)" value="${App.state.data.settings.minRed||5}"/>
+      <input id="pWarn" type="number" placeholder="Advertencia (amarillo)" value="${App.state.data.settings.warn||10}"/>
+      <input id="pA" type="number" placeholder="Depósito A" value="0"/>
+      <input id="pB" type="number" placeholder="Depósito B" value="0"/>
+      <input id="pC" type="number" placeholder="Depósito C" value="0"/>
+      <input id="pD" type="number" placeholder="Depósito D" value="0"/>
+    </div>
+    <div class="flex" style="margin-top:.6rem">
+      <button onclick="(function(){ const obj={sku:document.getElementById('pSku').value.trim(), nombre:document.getElementById('pNombre').value.trim(), alertMin:Number(document.getElementById('pMin').value||0), alertWarn:Number(document.getElementById('pWarn').value||0), A:Number(document.getElementById('pA').value||0), B:Number(document.getElementById('pB').value||0), C:Number(document.getElementById('pC').value||0), D:Number(document.getElementById('pD').value||0)}; if(!obj.sku||!obj.nombre){ alert('SKU y Nombre requeridos'); return;} Actions.addProduct(obj); })()">Guardar</button>
+      <div class="right"></div><button class="ghost" onclick="UI.closeModal()">Cancelar</button>
+    </div>`;
+  UI.modal(html);
+};
+
+/* =====================
+   Mini Charts (sin librerías)
+   ===================== */
+const Charts = {
+  drawMonthly(){
+    const cvs = document.getElementById('chart'); if(!cvs) return;
+    const ctx = cvs.getContext('2d');
+    // limpio
+    ctx.clearRect(0,0,cvs.width, cvs.height);
+    // datos mock: estimado (monto/mes) vs cobranzas registradas (historial)
+    const d = App.state.data;
+    const byMonth = {};
+    d.plans.forEach(p=>{
+      const k = new Date(p.proxVenc).toISOString().slice(0,7);
+      byMonth[k] = byMonth[k] || {estimado:0,cobrado:0};
+      byMonth[k].estimado += (p.monto/p.cuotas);
+      (p.historial||[]).forEach(h=>{ const kk = new Date(h.ts).toISOString().slice(0,7); byMonth[kk] = byMonth[kk]||{estimado:0,cobrado:0}; byMonth[kk].cobrado += h.monto; });
+    });
+    const keys = Object.keys(byMonth).sort().slice(-6);
+    const W=cvs.width, H=cvs.height, pad=30;
+    const maxv = Math.max(...keys.map(k=>Math.max(byMonth[k].estimado,byMonth[k].cobrado)), 1);
+    // ejes
+    ctx.strokeStyle="#31405a"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(pad,10); ctx.lineTo(pad,H-pad); ctx.lineTo(W-10,H-pad); ctx.stroke();
+    const bw = (W-pad-20)/keys.length - 16;
+    keys.forEach((k,i)=>{
+      const x = pad + 20 + i*(bw+16);
+      const v1 = byMonth[k].estimado / maxv * (H-pad-20);
+      const v2 = byMonth[k].cobrado / maxv * (H-pad-20);
+      // estimado (azulado)
+      ctx.fillStyle="#5b8cff"; ctx.fillRect(x, H-pad-v1, bw, v1);
+      // cobrado (verde)
+      ctx.fillStyle="#2ed573"; ctx.fillRect(x+bw*0.55, H-pad-v2, bw*0.45, v2);
+      ctx.fillStyle="#b4bed0"; ctx.font="10px sans-serif"; ctx.fillText(k, x, H-pad+12);
+    });
+  }
+};
+
+/* =====================
+   Arranque
+   ===================== */
+window.addEventListener('DOMContentLoaded', ()=>{
+  App.init();
+  document.getElementById('detectedTZ').textContent = TZ;
+});
+</script>
+</body>
+</html>
